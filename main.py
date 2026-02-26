@@ -3,8 +3,11 @@ import httpx
 import schedule
 import time
 from datetime import date
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+load_dotenv(override=True)
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
@@ -14,7 +17,7 @@ TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 def fetch_news_from_llm() -> str:
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         contents=f"Dame las 3 noticias más importantes de hoy {date.today()}. Para cada una: titular, resumen en 2 frases y URL fuente.",
         config=types.GenerateContentConfig(
             tools=[types.Tool(google_search=types.GoogleSearch())],

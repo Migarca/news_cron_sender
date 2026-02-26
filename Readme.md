@@ -23,7 +23,7 @@ Bot que cada mañana a las 8:00 busca las 3 noticias más relevantes del día us
 git clone <repo>
 cd news_sender_cron
 uv init --no-readme
-uv add httpx schedule google-genai
+uv add httpx schedule google-genai | uv sync
 ```
 
 ### 2. Crear el bot de Telegram
@@ -65,6 +65,14 @@ El bot ejecuta el job inmediatamente al arrancar para verificar que todo funcion
 uv run python main.py
 ```
 
+## Tests
+
+Tests de integración que verifican la conexión real con Telegram:
+
+```bash
+uv run pytest -v
+```
+
 ## Estructura
 
 ```
@@ -72,10 +80,11 @@ news_sender_cron/
 ├── main.py              # lógica principal
 ├── pyproject.toml       # dependencias
 ├── uv.lock              # lockfile (generado por uv)
-├── .python-version      # versión de Python (generado por uv)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .env                 # secrets (no commitear)
-├── .env.example         # plantilla
-└── .gitignore
+├── .gitignore
+└── tests/
+    ├── conftest.py      # carga .env antes de importar módulos
+    └── test_telegram.py # test de integración de Telegram
 ```
