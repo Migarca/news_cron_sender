@@ -42,8 +42,9 @@ def job():
 
 
 if __name__ == "__main__":
+    schedule_hour = os.environ.get("SCHEDULE_HOUR", "08:00")
     job()
-    schedule.every().day.at("08:00").do(job)
+    schedule.every().day.at(schedule_hour).do(job)
     while True:
         schedule.run_pending()
         time.sleep(30)

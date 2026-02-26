@@ -49,6 +49,7 @@ Edita `.env` con tus valores:
 GEMINI_API_KEY=tu_gemini_api_key
 TELEGRAM_TOKEN=tu_bot_token
 TELEGRAM_CHAT_ID=tu_chat_id
+SCHEDULE_HOUR=08:00          # opcional, hora de envío diario (por defecto 08:00)
 ```
 
 ### 4. Arrancar
@@ -57,7 +58,7 @@ TELEGRAM_CHAT_ID=tu_chat_id
 docker compose up -d --build
 ```
 
-El bot ejecuta el job inmediatamente al arrancar para verificar que todo funciona, y después lo programa diariamente a las 8:00.
+El bot ejecuta el job inmediatamente al arrancar para verificar que todo funciona, y después lo programa diariamente a la hora configurada en `SCHEDULE_HOUR` (por defecto `08:00`).
 
 ## Desarrollo local
 
@@ -67,7 +68,7 @@ uv run python main.py
 
 ## Tests
 
-Tests de integración que verifican la conexión real con Telegram:
+Tests de integración que verifican la conexión real con Telegram y la API de Gemini:
 
 ```bash
 uv run pytest -v
@@ -86,5 +87,6 @@ news_sender_cron/
 ├── .gitignore
 └── tests/
     ├── conftest.py      # carga .env antes de importar módulos
-    └── test_telegram.py # test de integración de Telegram
+    ├── test_telegram.py # test de integración de Telegram
+    └── test_api.py      # test de validación de la API de Gemini
 ```
