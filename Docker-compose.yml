@@ -1,0 +1,5 @@
+services:
+  news-sender-cron:
+    build: .
+    restart: unless-stopped
+    env_file: .env
