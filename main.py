@@ -1,12 +1,12 @@
 import os
+import asyncio
 import logging
-import httpx
-import schedule
-import time
-from datetime import date
+from datetime import date, datetime
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes, filters
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -15,7 +15,10 @@ load_dotenv(override=True)
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
-TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+TELEGRAM_CHAT_ID = int(os.environ["TELEGRAM_CHAT_ID"])
+
+DAILY_JOB_NAME = "daily_news"
+START_TIME = datetime.now()
 
 
 def fetch_news_from_llm() -> str:
@@ -56,30 +59,92 @@ def fetch_news_from_llm() -> str:
     return response.text.strip()
 
 
-def send_telegram(message: str) -> None:
-    logging.info("Sending message to Telegram...")
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    httpx.post(url, json={
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": f"📰 <b>Noticias del {date.today()}</b>\n\n{message}",
-        "parse_mode": "HTML",
-        "disable_web_page_preview": True,
-    }, timeout=10)
-    logging.info("Message sent to Telegram")
+async def send_news(bot, chat_id: int) -> None:
+    news = await asyncio.to_thread(fetch_news_from_llm)
+    await bot.send_message(
+        chat_id=chat_id,
+        text=f"📰 <b>Noticias del {date.today()}</b>\n\n{news}",
+        parse_mode="HTML",
+        disable_web_page_preview=True,
+    )
 
 
-def job():
-    logging.info("Job started")
-    news = fetch_news_from_llm()
-    send_telegram(news)
-    logging.info("Job finished")
+async def scheduled_news(context: ContextTypes.DEFAULT_TYPE) -> None:
+    logging.info("Scheduled job started")
+    await send_news(context.bot, TELEGRAM_CHAT_ID)
+    logging.info("Scheduled job finished")
+
+
+async def cmd_news(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logging.info("/news command received")
+    await update.message.reply_text("Buscando noticias...")
+    await send_news(context.bot, update.effective_chat.id)
+
+
+async def cmd_hour(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not context.args:
+        await update.message.reply_text("Uso: /hour HH:MM (ej: /hour 09:30)")
+        return
+    try:
+        new_time = datetime.strptime(context.args[0], "%H:%M").time()
+    except ValueError:
+        await update.message.reply_text("Formato incorrecto. Usa HH:MM (ej: /hour 09:30)")
+        return
+
+    jobs = context.job_queue.get_jobs_by_name(DAILY_JOB_NAME)
+    for job in jobs:
+        job.schedule_removal()
+
+    context.job_queue.run_daily(scheduled_news, time=new_time, name=DAILY_JOB_NAME)
+    logging.info(f"Schedule changed to {context.args[0]}")
+    await update.message.reply_text(f"Hora cambiada a {context.args[0]}")
+
+
+async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    uptime = datetime.now() - START_TIME
+    hours, remainder = divmod(int(uptime.total_seconds()), 3600)
+    minutes, _ = divmod(remainder, 60)
+
+    jobs = context.job_queue.get_jobs_by_name(DAILY_JOB_NAME)
+    next_run = jobs[0].next_t.strftime("%H:%M") if jobs else "No programado"
+
+    await update.message.reply_text(
+        f"<b>Estado del bot</b>\n\n"
+        f"Uptime: {hours}h {minutes}m\n"
+        f"Próximo envío: {next_run}",
+        parse_mode="HTML",
+    )
+
+
+async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        "<b>Comandos disponibles</b>\n\n"
+        "/news - Enviar noticias ahora\n"
+        "/hour HH:MM - Cambiar hora del envío diario\n"
+        "/status - Ver estado del bot\n"
+        "/help - Ver esta ayuda",
+        parse_mode="HTML",
+    )
+
+
+def main() -> None:
+    schedule_hour = os.environ.get("SCHEDULE_HOUR", "08:00")
+    schedule_time = datetime.strptime(schedule_hour, "%H:%M").time()
+
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
+
+    chat_filter = filters.Chat(chat_id=TELEGRAM_CHAT_ID)
+    app.add_handler(CommandHandler("news", cmd_news, filters=chat_filter))
+    app.add_handler(CommandHandler("hour", cmd_hour, filters=chat_filter))
+    app.add_handler(CommandHandler("status", cmd_status, filters=chat_filter))
+    app.add_handler(CommandHandler("help", cmd_help, filters=chat_filter))
+
+    app.job_queue.run_daily(scheduled_news, time=schedule_time, name=DAILY_JOB_NAME)
+    app.job_queue.run_once(scheduled_news, when=0)
+
+    logging.info(f"Bot started. Scheduled daily at {schedule_hour}")
+    app.run_polling()
 
 
 if __name__ == "__main__":
-    schedule_hour = os.environ.get("SCHEDULE_HOUR", "08:00")
-    logging.info(f"Scheduled daily at {schedule_hour}")
-    job()
-    schedule.every().day.at(schedule_hour).do(job)
-    while True:
-        schedule.run_pending()
-        time.sleep(30)
+    main()

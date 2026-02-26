@@ -1,8 +1,12 @@
 import pytest
-from main import send_telegram
+from telegram import Bot
 
 
 @pytest.mark.integration
-def test_send_telegram_delivers_message():
-    """Verifica que send_telegram envía un mensaje correctamente al bot."""
-    send_telegram("✅ Test de integración — Telegram funcionando correctamente.")
+def test_telegram_bot_token_is_valid():
+    """Verifica que el token del bot de Telegram es válido."""
+    import os
+    bot = Bot(token=os.environ["TELEGRAM_TOKEN"])
+    import asyncio
+    me = asyncio.run(bot.get_me())
+    assert me.is_bot
