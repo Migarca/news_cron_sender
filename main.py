@@ -9,6 +9,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, filters
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 load_dotenv(override=True)
 
