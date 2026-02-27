@@ -62,12 +62,17 @@ def fetch_news_from_llm() -> str:
 
 async def send_news(bot, chat_id: int) -> None:
     news = await asyncio.to_thread(fetch_news_from_llm)
-    await bot.send_message(
-        chat_id=chat_id,
-        text=f"📰 <b>Noticias del {date.today()}</b>\n\n{news}",
-        parse_mode="HTML",
-        disable_web_page_preview=True,
-    )
+    header = f"📰 <b>Noticias del {date.today()}</b>"
+    sections = [s.strip() for s in news.split("━━━━━━━━━━━━━━━━━━") if s.strip()]
+
+    await bot.send_message(chat_id=chat_id, text=header, parse_mode="HTML")
+    for section in sections:
+        await bot.send_message(
+            chat_id=chat_id,
+            text=section,
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
 
 
 async def scheduled_news(context: ContextTypes.DEFAULT_TYPE) -> None:
