@@ -1,6 +1,7 @@
 import os
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from google import genai
 
@@ -16,6 +17,8 @@ TELEGRAM_CHAT_ID = int(os.environ["TELEGRAM_CHAT_ID"])
 
 MAX_RETRIES = 3
 RETRY_BASE_DELAY = 5
+
+TIMEZONE = ZoneInfo("Europe/Madrid")
 
 DAILY_JOB_NAME = "daily_news"
 START_TIME = datetime.now()

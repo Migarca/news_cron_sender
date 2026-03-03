@@ -6,12 +6,14 @@ from telegram.ext import Application, CommandHandler, filters
 
 from bot.handlers import cmd_help, cmd_hour, cmd_news, cmd_status
 from bot.sender import scheduled_news
-from config import DAILY_JOB_NAME, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN
+from config import DAILY_JOB_NAME, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN, TIMEZONE
 
 
 def main() -> None:
     schedule_hour = os.environ.get("SCHEDULE_HOUR", "08:00")
-    schedule_time = datetime.strptime(schedule_hour, "%H:%M").time()
+    schedule_time = (
+        datetime.strptime(schedule_hour, "%H:%M").time().replace(tzinfo=TIMEZONE)
+    )
 
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 

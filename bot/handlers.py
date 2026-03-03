@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from bot.sender import send_news
-from config import DAILY_JOB_NAME, START_TIME
+from config import DAILY_JOB_NAME, START_TIME, TIMEZONE
 
 
 async def cmd_news(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -19,7 +19,9 @@ async def cmd_hour(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Uso: /hour HH:MM (ej: /hour 09:30)")
         return
     try:
-        new_time = datetime.strptime(context.args[0], "%H:%M").time()
+        new_time = (
+            datetime.strptime(context.args[0], "%H:%M").time().replace(tzinfo=TIMEZONE)
+        )
     except ValueError:
         await update.message.reply_text(
             "Formato incorrecto. Usa HH:MM (ej: /hour 09:30)"
