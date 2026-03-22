@@ -4,7 +4,14 @@ from datetime import datetime
 
 from telegram.ext import Application, CommandHandler, filters
 
-from bot.handlers import cmd_help, cmd_hour, cmd_news, cmd_status
+from bot.handlers import (
+    cmd_help,
+    cmd_hour,
+    cmd_news,
+    cmd_prompt,
+    cmd_setprompt,
+    cmd_status,
+)
 from bot.sender import scheduled_news
 from config import DAILY_JOB_NAME, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN, TIMEZONE
 
@@ -21,6 +28,8 @@ def main() -> None:
     app.add_handler(CommandHandler("news", cmd_news, filters=chat_filter))
     app.add_handler(CommandHandler("hour", cmd_hour, filters=chat_filter))
     app.add_handler(CommandHandler("status", cmd_status, filters=chat_filter))
+    app.add_handler(CommandHandler("prompt", cmd_prompt, filters=chat_filter))
+    app.add_handler(CommandHandler("setprompt", cmd_setprompt, filters=chat_filter))
     app.add_handler(CommandHandler("help", cmd_help, filters=chat_filter))
 
     app.job_queue.run_daily(scheduled_news, time=schedule_time, name=DAILY_JOB_NAME)

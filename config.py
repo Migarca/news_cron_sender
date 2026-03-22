@@ -20,5 +20,6 @@ RETRY_BASE_DELAY = 5
 
 TIMEZONE = ZoneInfo("Europe/Madrid")
 
+PROMPT_FILE = "data/prompt.txt"
 DAILY_JOB_NAME = "daily_news"
 START_TIME = datetime.now()

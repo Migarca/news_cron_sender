@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 
 from bot.sender import send_news
 from config import DAILY_JOB_NAME, START_TIME, TIMEZONE
+from services.news import get_prompt, save_prompt
 
 
 async def cmd_news(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -55,11 +56,34 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     )
 
 
+async def cmd_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logging.info("/prompt command received")
+    prompt = get_prompt()
+    if len(prompt) > 4096:
+        prompt = prompt[:4093] + "..."
+    await update.message.reply_text(prompt)
+
+
+async def cmd_setprompt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logging.info("/setprompt command received")
+    text = update.message.text.partition(" ")[2].strip()
+    if not text:
+        await update.message.reply_text(
+            "Uso: /setprompt <texto del prompt>\n"
+            "Usa {today} donde quieras insertar la fecha actual."
+        )
+        return
+    save_prompt(text)
+    await update.message.reply_text("Prompt actualizado.")
+
+
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "<b>Comandos disponibles</b>\n\n"
         "/news - Enviar noticias ahora\n"
         "/hour HH:MM - Cambiar hora del envío diario\n"
+        "/prompt - Ver el prompt actual\n"
+        "/setprompt - Cambiar el prompt\n"
         "/status - Ver estado del bot\n"
         "/help - Ver esta ayuda",
         parse_mode="HTML",

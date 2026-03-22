@@ -1,44 +1,61 @@
 import logging
 import time
 from datetime import date
+from pathlib import Path
 
 from google.genai import types
 
-from config import MAX_RETRIES, RETRY_BASE_DELAY, gemini_client
+from config import MAX_RETRIES, PROMPT_FILE, RETRY_BASE_DELAY, gemini_client
+
+DEFAULT_PROMPT = (
+    "Dame las noticias más importantes, relevantes y de mayor interés público de hoy {today}. "
+    "Dame exactamente 3 a nivel global, 3 a nivel nacional (España) y 3 relacionadas con Inteligencia Artificial. "
+    "Las noticias deben estar publicadas en las últimas 24 horas. "
+    "Deben provenir únicamente de medios reconocidos y confiables (ej. BBC, Reuters, AP, AFP, The Guardian, El País, La Voz de Galicia, etc.). "
+    "Cada noticia debe estar confirmada por al menos dos fuentes independientes y ser verificable. "
+    "Selecciona únicamente noticias con alto impacto político, económico, social o geopolítico. "
+    "Descarta sucesos aislados, ciberataques locales, crímenes individuales o noticias de bajo impacto estratégico. "
+    "El resumen debe tener exactamente 2 frases claras y neutrales, sin opiniones, sin lenguaje sensacionalista y sin clickbait. "
+    "Devuelve SOLO el texto formateado en HTML de Telegram siguiendo EXACTAMENTE esta estructura:\n\n"
+    "<b>🌍 NOTICIAS GLOBALES</b>\n\n"
+    '1️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    '2️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    '3️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    "━━━━━━━━━━━━━━━━━━\n\n"
+    "<b>🇪🇸 NOTICIAS ESPAÑA</b>\n\n"
+    '1️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    '2️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    '3️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    "━━━━━━━━━━━━━━━━━━\n\n"
+    "<b>🤖 NOTICIAS IA</b>\n\n"
+    '1️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    '2️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    '3️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
+    "No añadas ningún texto fuera de este formato."
+)
+
+
+def get_prompt() -> str:
+    try:
+        return Path(PROMPT_FILE).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return DEFAULT_PROMPT
+
+
+def save_prompt(text: str) -> None:
+    path = Path(PROMPT_FILE)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
 
 
 def fetch_news_from_llm() -> str:
     logging.info("Fetching news from LLM...")
+    prompt = get_prompt().replace("{today}", str(date.today()))
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             response = gemini_client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents=(
-                    f"Dame las noticias más importantes, relevantes y de mayor interés público de hoy {date.today()}. "
-                    "Dame exactamente 3 a nivel global, 3 a nivel nacional (España) y 3 relacionadas con Inteligencia Artificial. "
-                    "Las noticias deben estar publicadas en las últimas 24 horas. "
-                    "Deben provenir únicamente de medios reconocidos y confiables (ej. BBC, Reuters, AP, AFP, The Guardian, El País, La Voz de Galicia, etc.). "
-                    "Cada noticia debe estar confirmada por al menos dos fuentes independientes y ser verificable. "
-                    "Selecciona únicamente noticias con alto impacto político, económico, social o geopolítico. "
-                    "Descarta sucesos aislados, ciberataques locales, crímenes individuales o noticias de bajo impacto estratégico. "
-                    "El resumen debe tener exactamente 2 frases claras y neutrales, sin opiniones, sin lenguaje sensacionalista y sin clickbait. "
-                    "Devuelve SOLO el texto formateado en HTML de Telegram siguiendo EXACTAMENTE esta estructura:\n\n"
-                    "<b>🌍 NOTICIAS GLOBALES</b>\n\n"
-                    '1️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    '2️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    '3️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    "━━━━━━━━━━━━━━━━━━\n\n"
-                    "<b>🇪🇸 NOTICIAS ESPAÑA</b>\n\n"
-                    '1️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    '2️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    '3️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    "━━━━━━━━━━━━━━━━━━\n\n"
-                    "<b>🤖 NOTICIAS IA</b>\n\n"
-                    '1️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    '2️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    '3️⃣ <b>Titular</b>\nResumen en 2 frases.\n🔗 <a href="URL">Fuente</a>\n\n'
-                    "No añadas ningún texto fuera de este formato."
-                ),
+                contents=prompt,
                 config=types.GenerateContentConfig(
                     tools=[types.Tool(google_search=types.GoogleSearch())],
                 ),
