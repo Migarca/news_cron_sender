@@ -10,7 +10,7 @@ from config import DAILY_JOB_NAME, TELEGRAM_CHAT_ID, TELEGRAM_TOKEN, TIMEZONE
 
 
 def main() -> None:
-    schedule_hour = os.environ.get("SCHEDULE_HOUR", "08:00")
+    schedule_hour = os.environ.get("SCHEDULE_HOUR", "21:30")
     schedule_time = (
         datetime.strptime(schedule_hour, "%H:%M").time().replace(tzinfo=TIMEZONE)
     )

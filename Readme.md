@@ -1,6 +1,6 @@
 # news_sender_cron
 
-Bot que cada mañana a las 8:00 busca las 3 noticias más relevantes del día usando Gemini con Google Search y las envía a Telegram.
+Bot que cada noche a las 21:30 busca las 3 noticias más relevantes del día usando Gemini con Google Search y las envía a Telegram.
 
 ## Stack
 
@@ -49,7 +49,7 @@ Edita `.env` con tus valores:
 GEMINI_API_KEY=tu_gemini_api_key
 TELEGRAM_TOKEN=tu_bot_token
 TELEGRAM_CHAT_ID=tu_chat_id
-SCHEDULE_HOUR=08:00          # opcional, hora de envío diario (por defecto 08:00)
+SCHEDULE_HOUR=21:30          # opcional, hora de envío diario (por defecto 21:30)
 ```
 
 ### 4. Arrancar
@@ -58,7 +58,7 @@ SCHEDULE_HOUR=08:00          # opcional, hora de envío diario (por defecto 08:0
 docker compose up -d --build
 ```
 
-El bot ejecuta el job inmediatamente al arrancar para verificar que todo funciona, y después lo programa diariamente a la hora configurada en `SCHEDULE_HOUR` (por defecto `08:00`).
+El bot ejecuta el job inmediatamente al arrancar para verificar que todo funciona, y después lo programa diariamente a la hora configurada en `SCHEDULE_HOUR` (por defecto `21:30`).
 
 ## Desarrollo local
 
